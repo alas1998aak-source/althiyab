@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>قائمة الباحثين عن عمل - مكتب الذياب</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:12px;color:#222}
+.wrap{max-width:640px;margin:0 auto}
+h1{font-size:19px;margin:6px 0 12px}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.hidden{display:none}
+label{display:block;margin:10px 0 4px;font-size:14px}
+input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;font-family:inherit}
+button{font-family:inherit;font-size:15px;border:0;border-radius:8px;padding:10px 12px;cursor:pointer;color:#fff;background:#0a7d3b}
+button.full{width:100%;margin-top:14px;font-size:17px}
+button.gray{background:#6b7280}
+button.red{background:#c0392b}
+button.blue{background:#1d6fd8}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tabs{display:flex;gap:6px;margin:10px 0}
+.tabs button{flex:1;background:#e5e7eb;color:#222;padding:10px 4px;font-size:14px}
+.tabs button.on{background:#0a7d3b;color:#fff}
+.search{display:flex;gap:6px}
+.search input{flex:1}
+.msg{margin-top:10px;font-size:15px}
+.err{color:#c0392b}.ok{color:#0a7d3b}.muted{color:#666;font-size:14px}
+.person{display:flex;gap:12px}
+.photo{width:76px;height:76px;border-radius:10px;object-fit:cover;background:#e5e7eb;flex:none}
+.ph{width:76px;height:76px;border-radius:10px;background:#e5e7eb;flex:none;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px}
+.info{flex:1;min-width:0;font-size:14px;line-height:1.7}
+.name{font-size:17px;font-weight:bold}
+.tag{display:inline-block;background:#eef6f0;color:#0a7d3b;border-radius:6px;padding:0 8px;font-size:13px;margin-left:4px}
+.skills,.about{word-wrap:break-word;overflow-wrap:anywhere}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.btns a{text-decoration:none;color:#fff;border-radius:8px;padding:10px 12px;font-size:15px}
+.btns a.call{background:#1d6fd8}
+.btns a.wa{background:#25a244}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>قائمة الباحثين عن عمل - مكتب الذياب</h1>
+
+<div id="login" class="card hidden">
+<form id="lf">
+<label>البريد الإلكتروني</label>
+<input id="em" type="email" required autocomplete="username">
+<label>كلمة السر</label>
+<input id="pw" type="password" required autocomplete="current-password">
+<button class="full" type="submit">دخول</button>
+<div id="lmsg" class="msg"></div>
+</form>
+</div>
+
+<div id="app" class="hidden">
+<div class="top">
+<span class="muted">هذه الصفحة للمدير فقط</span>
+<button id="out" class="gray" type="button">خروج</button>
+</div>
+
+<div class="tabs">
+<button type="button" data-tab="pending" class="on">قيد المراجعة</button>
+<button type="button" data-tab="approved">المقبولين</button>
+<button type="button" data-tab="rejected">المرفوضين</button>
+</div>
+
+<div class="search">
+<input id="q" placeholder="ابحث: اختصاص، مهارة، اسم، محافظة">
+<button id="sb" type="button">بحث</button>
+</div>
+
+<div id="count" class="muted" style="margin:10px 2px"></div>
+<div id="list"></div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+(function () {
+  var sb = window.sb;
+  var $ = function (id) { return document.getElementById(id); };
+  var tab = "pending";
+  var timer = null;
+
+  function E(s) {
+    s = (s === null || s === undefined) ? "" : String(s);
+    return s.replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function digits(p) { return String(p || "").replace(/[^0-9]/g, ""); }
+
+  function waNumber(p) {
+    var d = digits(p);
+    if (d.indexOf("00") === 0) return d.slice(2);
+    if (d.charAt(0) === "0") return "963" + d.slice(1);
+    return d;
+  }
+
+  function showLogin(text) {
+    $("app").classList.add("hidden");
+    $("login").classList.remove("hidden");
+    var m = $("lmsg");
+    m.className = "msg err";
+    m.textContent = text || "";
+  }
+
+  function showApp() {
+    $("login").classList.add("hidden");
+    $("app").classList.remove("hidden");
+  }
+
+  async function enter() {
+    var r = await sb.rpc("is_admin");
+    if (r.error || r.data !== true) {
+      await sb.auth.signOut();
+      showLogin("هذا الحساب ليس حساب المدير.");
+      return;
+    }
+    showApp();
+    load();
+  }
+
+  async function init() {
+    if (!sb) { showLogin("خطأ: الاتصال بالقاعدة غير جاهز. حدّث الصفحة."); return; }
+    var s = await sb.auth.getSession();
+    if (s.data && s.data.session) { enter(); } else { showLogin(""); }
+  }
+
+  $("lf").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var m = $("lmsg");
+    m.className = "msg";
+    m.textContent = "جاري الدخول...";
+    var r = await sb.auth.signInWithPassword({
+      email: $("em").value.trim(),
+      password: $("pw").value
+    });
+    if (r.error) {
+      m.className = "msg err";
+      m.textContent = "فشل الدخول: " + r.error.message;
+      return;
+    }
+    $("pw").value = "";
+    enter();
+  });
+
+  $("out").addEventListener("click", async function () {
+    await sb.auth.signOut();
+    showLogin("");
+  });
+
+  document.querySelectorAll(".tabs button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      tab = b.getAttribute("data-tab");
+      document.querySelectorAll(".tabs button").forEach(function (x) {
+        x.classList.toggle("on", x === b);
+      });
+      load();
+    });
+  });
+
+  $("sb").addEventListener("click", load);
+  $("q").addEventListener("input", function () {
+    clearTimeout(timer);
+    timer = setTimeout(load, 450);
+  });
+  $("q").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { clearTimeout(timer); load(); }
+  });
+
+  async function load() {
+    var list = $("list");
+    list.innerHTML = '<p class="muted">جاري التحميل...</p>';
+    $("count").textContent = "";
+
+    var q = sb.from("job_seekers").select("*").eq("status", tab)
+      .order("created_at", { ascending: false }).limit(200);
+
+    var term = $("q").value.replace(/[,()%*\\"]/g, " ").trim();
+    if (term) {
+      var p = "%" + term + "%";
+      q = q.or(
+        'full_name.ilike."' + p + '",field.ilike."' + p + '",skills.ilike."' + p + '",governorate.ilike."' + p + '"'
+      );
+    }
+
+    var r = await q;
+    if (r.error) {
+      list.innerHTML = '<p class="err">خطأ: ' + E(r.error.message) + "</p>";
+      return;
+    }
+
+    var rows = r.data || [];
+    $("count").textContent = "العدد: " + rows.length;
+    if (!rows.length) {
+      list.innerHTML = '<p class="muted">ما في نتائج.</p>';
+      return;
+    }
+
+    var paths = rows.filter(function (x) { return x.photo_path; })
+      .map(function (x) { return x.photo_path; });
+    var urls = {};
+    if (paths.length) {
+      var s = await sb.storage.from("seeker-photos").createSignedUrls(paths, 3600);
+      if (s.data) {
+        s.data.forEach(function (o) { if (o.signedUrl) urls[o.path] = o.signedUrl; });
+      }
+    }
+
+    list.innerHTML = rows.map(function (x) {
+      var img = urls[x.photo_path]
+        ? '<img class="photo" src="' + E(urls[x.photo_path]) + '" alt="">'
+        : '<div class="ph">بدون صورة</div>';
+      var d = digits(x.phone);
+      var wa = waNumber(x.phone);
+      var btns = "";
+      if (tab !== "approved") btns += '<button type="button" data-act="approved" data-id="' + E(x.id) + '">قبول</button>';
+      if (tab !== "rejected") btns += '<button type="button" class="gray" data-act="rejected" data-id="' + E(x.id) + '">رفض</button>';
+      btns += '<button type="button" class="red" data-act="delete" data-id="' + E(x.id) + '" data-photo="' + E(x.photo_path || "") + '">حذف</button>';
+      return '<div class="card">' +
+        '<div class="person">' + img +
+        '<div class="info">' +
+        '<div class="name">' + E(x.full_name) + "</div>" +
+        '<div><span class="tag">' + E(x.field) + "</span>" +
+        '<span class="tag">' + E(x.governorate) + "</span>" +
+        (x.experience_years !== null && x.experience_years !== undefined ? '<span class="tag">خبرة ' + E(x.experience_years) + " سنة</span>" : "") +
+        "</div>" +
+        '<div class="skills"><b>المهارات:</b> ' + E(x.skills) + "</div>" +
+        (x.about ? '<div class="about"><b>نبذة:</b> ' + E(x.about) + "</div>" : "") +
+        '<div><b>الهاتف:</b> <span dir="ltr">' + E(x.phone) + "</span></div>" +
+        (x.email ? '<div><b>الإيميل:</b> <span dir="ltr">' + E(x.email) + "</span></div>" : "") +
+        "</div></div>" +
+        '<div class="btns">' +
+        '<a class="call" href="tel:' + E(d) + '">اتصال</a>' +
+        '<a class="wa" target="_blank" rel="noopener" href="https://wa.me/' + E(wa) + '">واتساب</a>' +
+        btns +
+        "</div></div>";
+    }).join("");
+  }
+
+  $("list").addEventListener("click", async function (e) {
+    var b = e.target.closest("button[data-act]");
+    if (!b) return;
+    var act = b.getAttribute("data-act");
+    var id = b.getAttribute("data-id");
+
+    if (act === "delete") {
+      if (!confirm("متأكد من الحذف نهائياً؟")) return;
+      b.disabled = true;
+      var photo = b.getAttribute("data-photo");
+      var d = await sb.from("job_seekers").delete().eq("id", id);
+      if (d.error) { alert("فشل الحذف: " + d.error.message); b.disabled = false; return; }
+      if (photo) { await sb.storage.from("seeker-photos").remove([photo]); }
+      load();
+      return;
+    }
+
+    b.disabled = true;
+    var u = await sb.from("job_seekers")
+      .update({ status: act, reviewed_at: new Date().toISOString() })
+      .eq("id", id);
+    if (u.error) { alert("فشل التحديث: " + u.error.message); b.disabled = false; return; }
+    load();
+  });
+
+  init();
+})();
+</script>
+</body>
+  </html>
