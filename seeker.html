@@ -48,4 +48,91 @@ button:disabled{opacity:.6}
 <div id="msg"></div>
 </form>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+(function () {
+  var form = document.getElementById("f");
+  var btn = document.getElementById("btn");
+  var msg = document.getElementById("msg");
+
+  function show(text, ok) {
+    msg.className = ok ? "ok" : "err";
+    msg.textContent = text;
+  }
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    msg.textContent = "";
+
+    if (!window.sb) {
+      show("خطأ: الاتصال بالقاعدة غير جاهز. حدّث الصفحة وجرّب.", false);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "جاري الإرسال...";
+
+    try {
+      var photoPath = null;
+      var file = document.getElementById("img").files[0];
+
+      if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+          throw new Error("حجم الصورة أكبر من 2MB.");
+        }
+        var extMap = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+        var ext = extMap[file.type];
+        if (!ext) {
+          throw new Error("نوع الصورة غير مدعوم. استخدم jpg أو png أو webp.");
+        }
+        var rand = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : String(Date.now()) + Math.random().toString(16).slice(2);
+        var path = "submissions/" + rand + "." + ext;
+
+        var up = await window.sb.storage
+          .from("seeker-photos")
+          .upload(path, file, { contentType: file.type, upsert: false });
+        if (up.error) {
+          throw new Error("فشل رفع الصورة: " + up.error.message);
+        }
+        photoPath = path;
+      }
+
+      var expRaw = document.getElementById("exp").value.trim();
+      var emailRaw = document.getElementById("email").value.trim();
+      var aboutRaw = document.getElementById("about").value.trim();
+
+      var row = {
+        full_name: document.getElementById("name").value.trim(),
+        field: document.getElementById("field").value.trim(),
+        skills: document.getElementById("skills").value.trim(),
+        experience_years: expRaw === "" ? null : parseInt(expRaw, 10),
+        governorate: document.getElementById("gov").value,
+        about: aboutRaw === "" ? null : aboutRaw,
+        phone: document.getElementById("phone").value.trim(),
+        email: emailRaw === "" ? null : emailRaw,
+        photo_path: photoPath
+      };
+
+      var res = await window.sb.from("job_seekers").insert(row);
+      if (res.error) {
+        throw new Error("فشل الحفظ: " + res.error.message);
+      }
+
+      form.reset();
+      show("تم الإرسال بنجاح. شكراً لك، رح نراجع بياناتك ونتواصل معك.", true);
+    } catch (err) {
+      show(err.message || "صار خطأ غير متوقع.", false);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "إرسال";
+    }
+  });
+})();
+</script>
+</body>
+</html>
