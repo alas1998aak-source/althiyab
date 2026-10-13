@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>أرسل إعلان وظيفة - مكتب الذياب</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
+.box{max-width:520px;margin:0 auto;background:#fff;padding:20px;border-radius:12px}
+h1{font-size:20px;margin-top:0}
+label{display:block;margin:12px 0 4px;font-size:14px}
+input,select,textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;font-family:inherit}
+textarea{min-height:110px}
+button{width:100%;margin-top:18px;padding:12px;background:#0a7d3b;color:#fff;border:0;border-radius:8px;font-size:17px}
+button:disabled{opacity:.6}
+#msg{margin-top:14px;font-size:15px}
+.ok{color:#0a7d3b}.err{color:#c0392b}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>أرسل إعلان وظيفة</h1>
+<p style="font-size:14px;color:#555">يظهر الإعلان بالموقع بعد مراجعته من الإدارة.</p>
+<form id="f">
+<label>اسم الشركة *</label>
+<input id="company" required minlength="2" maxlength="120">
+<label>المسمى الوظيفي *</label>
+<input id="title" required minlength="2" maxlength="120">
+<label>تفاصيل الوظيفة *</label>
+<textarea id="details" required minlength="10" maxlength="4000"></textarea>
+<label>المحافظة *</label>
+<select id="gov" required>
+<option value="">اختر</option>
+<option>دمشق</option><option>ريف دمشق</option><option>حلب</option><option>حمص</option><option>حماة</option><option>اللاذقية</option><option>طرطوس</option><option>إدلب</option><option>درعا</option><option>السويداء</option><option>القنيطرة</option><option>دير الزور</option><option>الرقة</option><option>الحسكة</option>
+</select>
+<label>المنطقة</label>
+<input id="area" maxlength="80">
+<label>الراتب</label>
+<input id="salary" maxlength="80">
+<label>رقم الهاتف *</label>
+<input id="phone" required inputmode="tel" maxlength="20">
+<label>البريد الإلكتروني</label>
+<input id="email" type="email" maxlength="120">
+<label>طريقة التقديم *</label>
+<input id="apply" required minlength="2" maxlength="500">
+<label>صورة (اختياري، أقل من 2MB)</label>
+<input id="img" type="file" accept="image/jpeg,image/png,image/webp">
+<button id="btn" type="submit">إرسال</button>
+<div id="msg"></div>
+</form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+document.getElementById("f").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  var b = document.getElementById("btn"), m = document.getElementById("msg");
+  function v(id) { return document.getElementById(id).value.trim(); }
+  var phone = v("phone");
+  if (!/^[0-9+ ()-]{7,20}$/.test(phone)) {
+    m.className = "err"; m.textContent = "رقم الهاتف غير صحيح (أرقام فقط)"; return;
+  }
+  b.disabled = true; m.className = ""; m.textContent = "جاري الإرسال...";
+  var path = null, file = document.getElementById("img").files[0];
+  try {
+    if (file) {
+      var types = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+      if (!types[file.type] || file.size > 2097152) {
+        throw new Error("الصورة يجب أن تكون jpg أو png أو webp وأقل من 2MB");
+      }
+      path = "submissions/" + crypto.randomUUID() + "." + types[file.type];
+      var up = await sb.storage.from("job-images").upload(path, file, { contentType: file.type });
+      if (up.error) throw up.error;
+    }
+    var row = {
+      company: v("company"), title: v("title"), details: v("details"),
+      governorate: v("gov"), area: v("area") || null, salary: v("salary") || null,
+      phone: phone, email: v("email") || null, apply_method: v("apply"), image_path: path
+    };
+    var r = await sb.from("jobs").insert(row);
+    if (r.error) throw r.error;
+    m.className = "ok"; m.textContent = "تم إرسال الإعلان، وسيظهر بعد مراجعته.";
+    document.getElementById("f").reset();
+  } catch (x) {
+    m.className = "err"; m.textContent = "تعذر الإرسال: " + (x.message || "حاول مرة ثانية");
+  }
+  b.disabled = false;
+});
+</script>
+</body>
+</html>
