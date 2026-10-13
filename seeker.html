@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سجّل بياناتك للباحثين عن عمل - مكتب الذياب</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
+.box{max-width:520px;margin:0 auto;background:#fff;padding:20px;border-radius:12px}
+h1{font-size:20px;margin-top:0}
+label{display:block;margin:12px 0 4px;font-size:14px}
+input,select,textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;font-family:inherit}
+textarea{min-height:100px}
+button{width:100%;margin-top:18px;padding:12px;background:#0a7d3b;color:#fff;border:0;border-radius:8px;font-size:17px}
+button:disabled{opacity:.6}
+#msg{margin-top:14px;font-size:15px}
+.ok{color:#0a7d3b}.err{color:#c0392b}
+.note{font-size:13px;color:#555}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>سجّل بياناتك للباحثين عن عمل</h1>
+<p class="note">بياناتك بتظهر لإدارة المكتب فقط، وما بتنشر للعامة. بعد المراجعة منتواصل معك لما تتوفر فرصة مناسبة.</p>
+<form id="f">
+<label>الاسم الكامل *</label>
+<input id="name" required minlength="2" maxlength="120">
+<label>الاختصاص / مجال العمل * (مثال: محاسب، مهندس مدني)</label>
+<input id="field" required minlength="2" maxlength="120">
+<label>سنوات الخبرة</label>
+<input id="exp" type="number" min="0" max="60" inputmode="numeric">
+<label>المهارات * (اكتبها مفصولة بفواصل)</label>
+<textarea id="skills" required minlength="2" maxlength="1500"></textarea>
+<label>المحافظة *</label>
+<select id="gov" required>
+<option value="">اختر</option>
+<option>دمشق</option><option>ريف دمشق</option><option>حلب</option><option>حمص</option><option>حماة</option><option>اللاذقية</option><option>طرطوس</option><option>إدلب</option><option>درعا</option><option>السويداء</option><option>القنيطرة</option><option>دير الزور</option><option>الرقة</option><option>الحسكة</option>
+</select>
+<label>نبذة عنك</label>
+<textarea id="about" maxlength="2000"></textarea>
+<label>رقم الهاتف / واتساب *</label>
+<input id="phone" required inputmode="tel" maxlength="20">
+<label>البريد الإلكتروني</label>
+<input id="email" type="email" maxlength="120">
+<label>صورة شخصية (اختياري، أقل من 2MB)</label>
+<input id="img" type="file" accept="image/jpeg,image/png,image/webp">
+<button id="btn" type="submit">إرسال</button>
+<div id="msg"></div>
+</form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"
