@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>لوحة التحكم - مكتب الذياب</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
+.box{max-width:640px;margin:0 auto}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px}
+input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;margin:6px 0}
+button{padding:10px 14px;border:0;border-radius:8px;font-size:15px;background:#0a7d3b;color:#fff;margin:4px 0 0 6px}
+button.g{background:#666}button.r{background:#c0392b}button.o{background:#b9770e}
+.tabs button{background:#ddd;color:#222}.tabs button.on{background:#0a7d3b;color:#fff}
+img{max-width:100%;border-radius:8px;margin-top:8px}
+.s{font-size:13px;color:#555}
+#msg{color:#c0392b;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="box">
+<div id="login" class="card">
+<h2>دخول المدير</h2>
+<input id="em" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
+<input id="pw" type="password" placeholder="كلمة السر" autocomplete="current-password">
+<button id="go">دخول</button>
+</div>
+<div id="app" style="display:none">
+<div class="card"><button class="g" id="out">خروج</button><div class="tabs" id="tabs"></div></div>
+<div id="list"></div>
+</div>
+<div id="msg"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+var cur = "pending";
+var labels = { pending: "قيد المراجعة", approved: "المقبولة", rejected: "المرفوضة", hidden: "المخفية" };
+function $(i) { return document.getElementById(i); }
+function say(t) { $("msg").textContent = t || ""; }
+function show(on) {
+  $("login").style.display = on ? "none" : "block";
+  $("app").style.display = on ? "block" : "none";
+}
+async function init() {
+  var s = await sb.auth.getSession();
+  if (!s.data.session) { show(false); return; }
+  var a = await sb.rpc("is_admin");
+  if (a.data === true) { show(true); load(); }
+  else { await sb.auth.signOut(); show(false); say("هذا الحساب ليس مدير"); }
+}
+$("go").onclick = async function () {
+  say("");
+  var r = await sb.auth.signInWithPassword({ email: $("em").value.trim(), password: $("pw").value });
+  if (r.error) { say("بيانات الدخول غير صحيحة"); return; }
+  init();
+};
+$("out").onclick = async function () { await sb.auth.signOut(); show(false); };
+function tabs() {
+  $("tabs").innerHTML = Object.keys(labels).map(function (k) {
+    return '<button class="' + (k === cur ? "on" : "") + '" data-k="' + k + '">' + labels[k] + "</button>";
+  }).join("");
+  Array.prototype.forEach.call($("tabs").querySelectorAll("button"), function (b) {
+    b.onclick = function () { cur = b.getAttribute("data-k"); load(); };
+  });
+}
+async function load() {
+  tabs();
+  var r = await sb.from("jobs").select("*").eq("status", cur).order("created_at", { ascending: false });
+  if (r.error) { say("خطأ: " + r.error.message); return; }
+  var L = $("list");
+  if (!r.data.length) { L.innerHTML = '<div class="card">لا يوجد إعلانات</div>'; return; }
+  L.innerHTML = r.data.map(function (j) {
+    var img = j.image_path ? '<img src="' + esc(sb.storage.from("job-images").getPublicUrl(j.image_path).data.publicUrl) + '">' : "";
+    var btns = "";
+    if (j.status !== "approved") btns += '<button data-a="approved" data-id="' + j.id + '">قبول</button>';
+    if (j.status === "pending") btns += '<button class="o" data-a="rejected" data-id="' + j.id + '">رفض</button>';
+    if (j.status === "approved") btns += '<button class="g" data-a="hidden" data-id="' + j.id + '">إخفاء</button>';
+    btns += '<button class="r" data-a="delete" data-id="' + j.id + '" data-p="' + esc(j.image_path || "") + '">حذف</button>';
+    return '<div class="card"><b>' + esc(j.title) + "</b> - " + esc(j.company) +
+      '<div class="s">' + esc(j.governorate) + (j.area ? " / " + esc(j.area) : "") + (j.salary ? " | " + esc(j.salary) : "") + "</div>" +
+      "<p>" + esc(j.details) + "</p>" +
+      '<div class="s">هاتف: ' + esc(j.phone) + (j.email ? " | " + esc(j.email) : "") + "</div>" +
+      '<div class="s">التقديم: ' + esc(j.apply_method) + "</div>" + img + "<div>" + btns + "</div></div>";
+  }).join("");
+}
+$("list").onclick = async function (e) {
+  var b = e.target.closest("button[data-a]");
+  if (!b) return;
+  var a = b.getAttribute("data-a"), id = b.getAttribute("data-id"), res;
+  b.disabled = true;
+  if (a === "delete") {
+    if (!confirm("حذف نهائي؟")) { b.disabled = false; return; }
+    var p = b.getAttribute("data-p");
+    if (p) await sb.storage.from("job-images").remove([p]);
+    res = await sb.from("jobs").delete().eq("id", id);
+  } else {
+    var now = new Date().toISOString(), u = { status: a, reviewed_at: now };
+    if (a === "approved") u.published_at = now;
+    res = await sb.from("jobs").update(u).eq("id", id);
+  }
+  if (res.error) { say("خطأ: " + res.error.message); b.disabled = false; return; }
+  say("");
+  load();
+};
+init();
+</script>
+</body>
+</html>
