@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>فرص العمل - مكتب الذياب</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
+.box{max-width:640px;margin:0 auto}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px}
+h1{font-size:22px}
+select{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;margin-bottom:12px}
+a.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:#0a7d3b;color:#fff;border-radius:8px;text-decoration:none;font-size:15px}
+img{max-width:100%;border-radius:8px;margin-top:8px}
+.s{font-size:13px;color:#555;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>فرص العمل المتاحة</h1>
+<select id="gov">
+<option value="">كل المحافظات</option>
+<option>دمشق</option><option>ريف دمشق</option><option>حلب</option><option>حمص</option><option>حماة</option><option>اللاذقية</option><option>طرطوس</option><option>إدلب</option><option>درعا</option><option>السويداء</option><option>القنيطرة</option><option>دير الزور</option><option>الرقة</option><option>الحسكة</option>
+</select>
+<div id="list" class="card">جاري التحميل...</div>
+<a class="b" href="submit.html">أرسل إعلان وظيفة</a>
+<a class="b" href="index.html" style="background:#666">الرئيسية</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+async function load() {
+  var L = document.getElementById("list");
+  var g = document.getElementById("gov").value;
+  var q = sb.from("jobs")
+    .select("id,company,title,details,governorate,area,salary,phone,email,apply_method,image_path,published_at")
+    .eq("status", "approved")
+    .order("published_at", { ascending: false });
+  if (g) q = q.eq("governorate", g);
+  var r = await q;
+  if (r.error) { L.textContent = "تعذر تحميل الإعلانات"; return; }
+  if (!r.data.length) { L.textContent = "لا يوجد إعلانات حالياً"; return; }
+  L.outerHTML = '<div id="list">' + r.data.map(function (j) {
+    var img = j.image_path ? '<img src="' + esc(sb.storage.from("job-images").getPublicUrl(j.image_path).data.publicUrl) + '">' : "";
+    var tel = String(j.phone).replace(/[^0-9+]/g, "");
+    return '<div class="card"><b>' + esc(j.title) + "</b> - " + esc(j.company) +
+      '<div class="s">' + esc(j.governorate) + (j.area ? " / " + esc(j.area) : "") + (j.salary ? " | الراتب: " + esc(j.salary) : "") + "</div>" +
+      '<p style="white-space:pre-wrap">' + esc(j.details) + "</p>" +
+      '<div class="s">طريقة التقديم: ' + esc(j.apply_method) + "</div>" + img +
+      '<div><a class="b" href="tel:' + tel + '">اتصال: ' + esc(j.phone) + "</a></div></div>";
+  }).join("") + "</div>";
+}
+document.getElementById("gov").onchange = function () {
+  var old = document.getElementById("list");
+  old.outerHTML = '<div id="list" class="card">جاري التحميل...</div>';
+  load();
+};
+load();
+</script>
+</body>
+</html>
