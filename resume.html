@@ -19,6 +19,7 @@ button,a.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:
 .g{background:#666}
 .s{font-size:13px;color:#555}
 .err{color:#b00020;font-size:14px;margin-top:8px}
+#jserr{background:#b00020;color:#fff;padding:8px;border-radius:8px;margin-bottom:10px;direction:ltr;text-align:left;font-size:13px}
 #prev{position:relative;background:#fff;border:1px solid #ddd;padding:18px;border-radius:8px;overflow:hidden}
 #prev:before{content:"معاينة";position:absolute;top:40%;right:0;left:0;text-align:center;font-size:70px;color:rgba(0,0,0,.07);transform:rotate(-20deg);pointer-events:none}
 #prev h3{margin:0;font-size:22px;color:#12305a}
@@ -30,6 +31,7 @@ button,a.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:
 </head>
 <body>
 <div class="box">
+<div id="jserr" class="hide"></div>
 <h1>أنشئ سيرتك الذاتية</h1>
 <div id="formArea">
 <div class="card">
@@ -64,4 +66,137 @@ button,a.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:
 <div id="prevArea" class="card hide">
 <h2>المعاينة</h2>
 <div id="prev"></div>
-<p class="s"
+<p class="s">النسخة النهائية بدون كلمة "معاينة". السعر: <b id="priceTxt"></b> دولار فقط.</p>
+<button type="button" id="btnEdit" class="g">تعديل البيانات</button>
+<button type="button" id="btnPay">الدفع وإنشاء النسخة النهائية</button>
+</div>
+
+<div id="payArea" class="card hide">
+<h2>الدفع عبر شام كاش</h2>
+<p>حوّل مبلغ <b id="priceTxt2"></b> دولار إلى حساب شام كاش التالي:</p>
+<div class="code" id="shamCode"></div>
+<button type="button" id="btnCopy" class="g">نسخ الكود</button>
+<label>رقم العملية (أو مرجع التحويل) *</label>
+<input id="ref">
+<button type="button" id="btnSend">أرسلت الدفع</button>
+<div class="err" id="err2"></div>
+<p class="s">بعد مراجعة الدفع من الإدارة بيصير التنزيل متاح.</p>
+</div>
+
+<div id="doneArea" class="card hide">
+<h2>تم استلام طلبك ✅</h2>
+<p>احفظ رمز الطلب هاد، لأنك رح تحتاجه لتنزيل سيرتك بعد تأكيد الدفع:</p>
+<div class="code" id="orderCode"></div>
+<button type="button" id="btnCopy2" class="g">نسخ الرمز</button>
+<p class="s">انتظر مراجعة الإدارة للدفع. إذا تأخر الرد تواصل معنا عالواتساب.</p>
+</div>
+
+<a class="b g" href="index.html">الرئيسية</a>
+</div>
+<script>
+window.onerror = function (m, u, l) {
+  var e = document.getElementById("jserr");
+  if (e) { e.textContent = "Error: " + m + " (line " + l + ")"; e.className = ""; }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+(function () {
+var SHAM_CODE = "c59083cd3afc0ae6251247f649f20fd2";
+var PRICE = 2;
+var $ = function (id) { return document.getElementById(id); };
+function val(id) { return $(id).value.trim(); }
+function lines(id) { return val(id).split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }
+function safe(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
+function addExp() {
+  var d = document.createElement("div");
+  d.className = "item ex";
+  d.innerHTML = '<input name="company" placeholder="اسم الشركة"><input name="job" placeholder="المسمى الوظيفي"><input name="from" placeholder="من (سنة/شهر)"><input name="to" placeholder="إلى (أو: حتى الآن)"><button type="button" class="g" onclick="this.parentNode.remove()">حذف</button>';
+  $("exps").appendChild(d);
+}
+function addEdu() {
+  var d = document.createElement("div");
+  d.className = "item ed";
+  d.innerHTML = '<input name="degree" placeholder="المؤهل العلمي"><input name="school" placeholder="الجامعة أو المعهد"><input name="year" placeholder="سنة التخرج"><button type="button" class="g" onclick="this.parentNode.remove()">حذف</button>';
+  $("edus").appendChild(d);
+}
+function items(cls, keys) {
+  return Array.prototype.map.call(document.querySelectorAll("." + cls), function (d) {
+    var o = {};
+    keys.forEach(function (k) { o[k] = d.querySelector('[name="' + k + '"]').value.trim(); });
+    return o;
+  }).filter(function (o) { return keys.some(function (k) { return o[k]; }); });
+}
+function collect() {
+  return {
+    name: val("name"), title: val("title"), phone: val("phone"), email: val("email"),
+    city: val("city"), summary: val("summary"),
+    exps: items("ex", ["company", "job", "from", "to"]),
+    edus: items("ed", ["degree", "school", "year"]),
+    skills: lines("skills"), langs: lines("langs"), courses: lines("courses")
+  };
+}
+function ul(a) { return a.length ? "<ul>" + a.map(function (x) { return "<li>" + safe(x) + "</li>"; }).join("") + "</ul>" : ""; }
+function render(d) {
+  var h = "<h3>" + safe(d.name) + "</h3>";
+  if (d.title) h += "<p><b>" + safe(d.title) + "</b></p>";
+  h += "<p>" + safe(d.phone) + (d.email ? " | " + safe(d.email) : "") + (d.city ? " | " + safe(d.city) : "") + "</p>";
+  if (d.summary) h += "<h4>نبذة مهنية</h4><p>" + safe(d.summary) + "</p>";
+  if (d.exps.length) h += "<h4>الخبرات العملية</h4>" + d.exps.map(function (e) {
+    return "<p><b>" + safe(e.job) + "</b> - " + safe(e.company) + " (" + safe(e.from) + (e.to ? " - " + safe(e.to) : "") + ")</p>";
+  }).join("");
+  if (d.edus.length) h += "<h4>المؤهلات العلمية</h4>" + d.edus.map(function (e) {
+    return "<p><b>" + safe(e.degree) + "</b> - " + safe(e.school) + (e.year ? " (" + safe(e.year) + ")" : "") + "</p>";
+  }).join("");
+  if (d.skills.length) h += "<h4>المهارات</h4>" + ul(d.skills);
+  if (d.langs.length) h += "<h4>اللغات</h4>" + ul(d.langs);
+  if (d.courses.length) h += "<h4>الدورات والشهادات</h4>" + ul(d.courses);
+  return h;
+}
+function show(id, on) { $(id).classList.toggle("hide", !on); }
+function copy(text, btn) {
+  if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { btn.textContent = "تم النسخ ✓"; }); }
+  else { prompt("انسخ:", text); }
+}
+
+$("priceTxt").textContent = PRICE;
+$("priceTxt2").textContent = PRICE;
+$("shamCode").textContent = SHAM_CODE;
+addExp(); addEdu();
+$("addExp").onclick = addExp;
+$("addEdu").onclick = addEdu;
+
+$("btnPrev").onclick = function () {
+  var d = collect();
+  if (d.name.length < 3) { $("err1").textContent = "اكتب الاسم الكامل"; return; }
+  if (String(d.phone).replace(/[^0-9]/g, "").length < 8) { $("err1").textContent = "اكتب رقم هاتف صحيح"; return; }
+  $("err1").textContent = "";
+  $("prev").innerHTML = render(d);
+  show("formArea", false); show("prevArea", true);
+  window.scrollTo(0, 0);
+};
+$("btnEdit").onclick = function () { show("prevArea", false); show("payArea", false); show("formArea", true); };
+$("btnPay").onclick = function () { show("payArea", true); $("payArea").scrollIntoView(); };
+$("btnCopy").onclick = function () { copy(SHAM_CODE, this); };
+$("btnSend").onclick = async function () {
+  var ref = val("ref");
+  if (ref.length < 4) { $("err2").textContent = "اكتب رقم العملية"; return; }
+  var b = this; b.disabled = true; $("err2").textContent = "جاري الإرسال...";
+  var d = collect();
+  var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16);
+  });
+  var res = await sb.from("resume_orders").insert({ id: id, full_name: d.name, data: d, pay_ref: ref });
+  if (res.error) { b.disabled = false; $("err2").textContent = "تعذر الإرسال، حاول مرة ثانية"; return; }
+  show("prevArea", false); show("payArea", false); show("doneArea", true);
+  $("orderCode").textContent = id;
+  window.scrollTo(0, 0);
+};
+$("btnCopy2").onclick = function () { copy($("orderCode").textContent, this); };
+})();
+</script>
+</body>
+</html>
