@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>مدفوعات السير الذاتية - الإدارة</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
+.box{max-width:640px;margin:0 auto}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px}
+h1{font-size:21px}
+label{display:block;font-size:14px;margin:8px 0 4px}
+input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;font-family:inherit}
+button,a.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:#0a7d3b;color:#fff;border:0;border-radius:8px;text-decoration:none;font-size:15px;font-family:inherit;cursor:pointer}
+.g{background:#666}.r{background:#c0392b}.t{background:#0a7d3b}.t.off{background:#ddd;color:#333}
+.s{font-size:13px;color:#555;margin-top:4px;word-break:break-all}
+.err{color:#b00020;font-size:14px;margin-top:8px}
+.hide{display:none}
+#jserr{background:#b00020;color:#fff;padding:8px;border-radius:8px;margin-bottom:10px;direction:ltr;text-align:left;font-size:13px}
+</style>
+</head>
+<body>
+<div class="box">
+<div id="jserr" class="hide"></div>
+<h1>مدفوعات السير الذاتية</h1>
+
+<div id="loginArea" class="card hide">
+<label>البريد الإلكتروني</label><input id="em" type="email">
+<label>كلمة المرور</label><input id="pw" type="password">
+<button type="button" id="btnLogin">دخول</button>
+<div class="err" id="errL"></div>
+</div>
+
+<div id="mainArea" class="hide">
+<div>
+<button type="button" class="t" id="tab_under_review">قيد المراجعة</button>
+<button type="button" class="t off" id="tab_paid">المؤكدة</button>
+<button type="button" class="t off" id="tab_rejected">المرفوضة</button>
+<button type="button" class="g" id="btnOut">خروج</button>
+</div>
+<div class="err" id="errM"></div>
+<div id="list"></div>
+</div>
+<a class="b g" href="admin.html">لوحة الإعلانات</a>
+</div>
+<script>
+window.onerror = function (m, u, l) {
+  var e = document.getElementById("jserr");
+  if (e) { e.textContent = "Error: " + m + " (line " + l + ")"; e.className = ""; }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+(function () {
+var $ = function (id) { return document.getElementById(id); };
+function safe(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function show(id, on) { $(id).classList.toggle("hide", !on); }
+var cur = "under_review";
+var rows = {};
+
+function setTabs() {
+  ["under_review", "paid", "rejected"].forEach(function (s) {
+    $("tab_" + s).className = "t" + (s === cur ? "" : " off");
+  });
+}
+async function load() {
+  $("errM").textContent = "";
+  $("list").innerHTML = "جاري التحميل...";
+  var r = await sb.from("resume_orders").select("*").eq("status", cur).order("created_at", { ascending: false });
+  if (r.error) { $("list").innerHTML = ""; $("errM").textContent = "تعذر التحميل: " + r.error.message; return; }
+  if (!r.data.length) { $("list").innerHTML = '<div class="card">لا يوجد طلبات</div>'; return; }
+  rows = {};
+  $("list").innerHTML = r.data.map(function (o) {
+    rows[o.id] = o;
+    var d = o.data || {};
+    var btns = "";
+    if (o.status !== "paid") btns += '<button type="button" data-a="ok" data-id="' + safe(o.id) + '">تأكيد الدفع</button>';
+    if (o.status !== "rejected") btns += '<button type="button" class="r" data-a="no" data-id="' + safe(o.id) + '">رفض</button>';
+    return '<div class="card"><b>' + safe(o.full_name) + '</b>' +
+      '<div class="s">الهاتف: ' + safe(d.phone) + '</div>' +
+      '<div class="s">رقم العملية: <b>' + safe(o.pay_ref) + '</b></div>' +
+      '<div class="s">التاريخ: ' + safe(new Date(o.created_at).toLocaleString("ar")) + '</div>' +
+      '<div class="s">رمز الطلب: ' + safe(o.id) + '</div>' +
+      (o.reject_reason ? '<div class="s">سبب الرفض: ' + safe(o.reject_reason) + '</div>' : "") +
+      '<div>' + btns + '</div></div>';
+  }).join("");
+}
+$("list").onclick = async function (e) {
+  var b = e.target;
+  if (!b.getAttribute || !b.getAttribute("data-a")) return;
+  var id = b.getAttribute("data-id");
+  var upd = { reviewed_at: new Date().toISOString() };
+  if (b.getAttribute("data-a") === "ok") {
+    if (!confirm("هل تأكدت إن المبلغ وصل فعلاً؟")) return;
+    upd.status = "paid"; upd.reject_reason = null;
+  } else {
+    var why = prompt("سبب الرفض (اختياري):");
+    if (why === null) return;
+    upd.status = "rejected"; upd.reject_reason = why;
+  }
+  b.disabled = true;
+  var r = await sb.from("resume_orders").update(upd).eq("id", id);
+  if (r.error) { b.disabled = false; $("errM").textContent = "تعذر الحفظ: " + r.error.message; return; }
+  load();
+};
+["under_review", "paid", "rejected"].forEach(function (s) {
+  $("tab_" + s).onclick = function () { cur = s; setTabs(); load(); };
+});
+$("btnLogin").onclick = async function () {
+  $("errL").textContent = "جاري الدخول...";
+  var r = await sb.auth.signInWithPassword({ email: $("em").value.trim(), password: $("pw").value });
+  if (r.error) { $("errL").textContent = "بيانات الدخول غير صحيحة"; return; }
+  start();
+};
+$("btnOut").onclick = async function () { await sb.auth.signOut(); show("mainArea", false); show("loginArea", true); };
+async function start() {
+  var s = await sb.auth.getSession();
+  if (s.data && s.data.session) { show("loginArea", false); show("mainArea", true); setTabs(); load(); }
+  else { show("mainArea", false); show("loginArea", true); }
+}
+start();
+})();
+</script>
+</body>
+</html>
