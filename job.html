@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تفاصيل الوظيفة - مكتب الذياب</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
+.box{max-width:640px;margin:0 auto}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px}
+h1{font-size:22px;margin:0 0 6px}
+a.b,button.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:#0a7d3b;color:#fff;border:0;border-radius:8px;text-decoration:none;font-size:15px;font-family:inherit;cursor:pointer}
+img{max-width:100%;border-radius:8px;margin-top:8px}
+.s{font-size:13px;color:#555;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="box">
+<div id="job" class="card">جاري التحميل...</div>
+<div id="similar"></div>
+<a class="b" href="jobs.html" style="background:#666">كل الإعلانات</a>
+<a class="b" href="index.html" style="background:#666">الرئيسية</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+function waNumber(p) {
+  var d = String(p).replace(/[^0-9]/g, "");
+  if (d.indexOf("00") === 0) d = d.slice(2);
+  else if (d.indexOf("0") === 0) d = "963" + d.slice(1);
+  else if (d.length === 9) d = "963" + d;
+  return d;
+}
+async function load() {
+  var J = document.getElementById("job");
+  var id = new URLSearchParams(location.search).get("id");
+  if (!id) { J.textContent = "الإعلان غير موجود"; return; }
+  var r = await sb.from("jobs")
+    .select("id,company,title,details,governorate,area,salary,phone,email,apply_method,image_path,published_at")
+    .eq("id", id).eq("status", "approved").maybeSingle();
+  if (r.error || !r.data) { J.textContent = "الإعلان غير موجود أو منتهي"; return; }
+  var j = r.data;
+  document.title = j.title + " - مكتب الذياب";
+  var img = j.image_path ? '<img src="' + esc(sb.storage.from("job-images").getPublicUrl(j.image_path).data.publicUrl) + '">' : "";
+  var tel = String(j.phone).replace(/[^0-9+]/g, "");
+  var url = location.href;
+  var msg = j.title + " - " + j.company + "\n" + url;
+  J.innerHTML = "<h1>" + esc(j.title) + "</h1><div><b>" + esc(j.company) + "</b></div>" +
+    '<div class="s">' + esc(j.governorate) + (j.area ? " / " + esc(j.area) : "") + (j.salary ? " | الراتب: " + esc(j.salary) : "") + "</div>" +
+    '<p style="white-space:pre-wrap">' + esc(j.details) + "</p>" +
+    '<div class="s">طريقة التقديم: ' + esc(j.apply_method) + "</div>" + img +
+    '<div style="margin-top:10px">' +
+    '<a class="b" href="tel:' + tel + '">اتصال</a>' +
+    '<a class="b" style="background:#25a244" href="https://wa.me/' + waNumber(j.phone) + "?text=" + encodeURIComponent("مرحباً، بخصوص وظيفة: " + j.title) + '">واتساب</a>' +
+    '<button class="b" id="sh" style="background:#1a6fd6">مشاركة</button>' +
+    '<button class="b" id="cp" style="background:#666">نسخ الرابط</button></div>';
+  document.getElementById("sh").onclick = function () {
+    if (navigator.share) { navigator.share({ title: j.title, text: j.title + " - " + j.company, url: url }).catch(function () {}); }
+    else { location.href = "https://wa.me/?text=" + encodeURIComponent(msg); }
+  };
+  document.getElementById("cp").onclick = function () {
+    var b = this;
+    if (navigator.clipboard) { navigator.clipboard.writeText(url).then(function () { b.textContent = "تم النسخ ✓"; }); }
+    else { prompt("انسخ الرابط:", url); }
+  };
+  var s = await sb.from("jobs").select("id,title,company,governorate")
+    .eq("status", "approved").eq("governorate", j.governorate).neq("id", j.id)
+    .order("published_at", { ascending: false }).limit(3);
+  if (!s.error && s.data && s.data.length) {
+    document.getElementById("similar").innerHTML = '<div class="card"><b>وظائف مشابهة</b>' + s.data.map(function (x) {
+      return '<div style="margin-top:8px"><a href="job.html?id=' + encodeURIComponent(x.id) + '">' + esc(x.title) + "</a> - " + esc(x.company) + "</div>";
+    }).join("") + "</div>";
+  }
+}
+load();
+</script>
+</body>
+</html>
