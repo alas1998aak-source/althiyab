@@ -51,7 +51,8 @@ async function load() {
       '<div class="s">' + esc(j.governorate) + (j.area ? " / " + esc(j.area) : "") + (j.salary ? " | الراتب: " + esc(j.salary) : "") + "</div>" +
       '<p style="white-space:pre-wrap">' + esc(j.details) + "</p>" +
       '<div class="s">طريقة التقديم: ' + esc(j.apply_method) + "</div>" + img +
-      '<div><a class="b" href="tel:' + tel + '">اتصال: ' + esc(j.phone) + "</a></div></div>";
+      '<div><a class="b" href="tel:' + tel + '">اتصال: ' + esc(j.phone) + "</a>" +
+      '<a class="b" style="background:#1a6fd6" href="job.html?id=' + encodeURIComponent(j.id) + '">التفاصيل</a></div></div>';
   }).join("") + "</div>";
 }
 function refresh() {
