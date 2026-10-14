@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>أنشئ سيرتك الذاتية - مكتب الذياب</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
+.box{max-width:640px;margin:0 auto}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px}
+h1{font-size:22px}
+h2{font-size:17px;margin:0 0 10px}
+label{display:block;font-size:14px;margin:8px 0 4px}
+input,textarea,select{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;font-family:inherit}
+textarea{min-height:70px}
+.item{border:1px dashed #bbb;border-radius:8px;padding:10px;margin-bottom:10px}
+.item input{margin-bottom:6px}
+button,a.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:#0a7d3b;color:#fff;border:0;border-radius:8px;text-decoration:none;font-size:15px;font-family:inherit;cursor:pointer}
+.g{background:#666}
+.s{font-size:13px;color:#555}
+.err{color:#b00020;font-size:14px;margin-top:8px}
+#prev{position:relative;background:#fff;border:1px solid #ddd;padding:18px;border-radius:8px;overflow:hidden}
+#prev:before{content:"معاينة";position:absolute;top:40%;right:0;left:0;text-align:center;font-size:70px;color:rgba(0,0,0,.07);transform:rotate(-20deg);pointer-events:none}
+#prev h3{margin:0;font-size:22px;color:#12305a}
+#prev h4{margin:14px 0 4px;color:#12305a;border-bottom:2px solid #c9a227;padding-bottom:3px;font-size:15px}
+#prev p,#prev li{font-size:14px;margin:3px 0}
+.hide{display:none}
+.code{background:#f1f1f1;padding:10px;border-radius:8px;font-family:monospace;word-break:break-all;direction:ltr;text-align:left}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>أنشئ سيرتك الذاتية</h1>
+<div id="formArea">
+<div class="card">
+<h2>البيانات الشخصية</h2>
+<label>الاسم الكامل *</label><input id="name">
+<label>المسمى الوظيفي المطلوب</label><input id="title">
+<label>رقم الهاتف *</label><input id="phone" type="tel">
+<label>البريد الإلكتروني (اختياري)</label><input id="email" type="email">
+<label>المحافظة والمدينة</label><input id="city">
+<label>نبذة مهنية</label><textarea id="summary"></textarea>
+</div>
+<div class="card">
+<h2>الخبرات العملية</h2>
+<div id="exps"></div>
+<button type="button" class="g" id="addExp">+ أضف خبرة</button>
+</div>
+<div class="card">
+<h2>المؤهلات العلمية</h2>
+<div id="edus"></div>
+<button type="button" class="g" id="addEdu">+ أضف مؤهل</button>
+</div>
+<div class="card">
+<h2>المهارات واللغات والدورات</h2>
+<label>المهارات (كل مهارة بسطر)</label><textarea id="skills"></textarea>
+<label>اللغات ومستوى الإتقان (كل لغة بسطر)</label><textarea id="langs"></textarea>
+<label>الدورات والشهادات (كل واحدة بسطر)</label><textarea id="courses"></textarea>
+</div>
+<button type="button" id="btnPrev">معاينة السيرة الذاتية</button>
+<div class="err" id="err1"></div>
+</div>
+
+<div id="prevArea" class="card hide">
+<h2>المعاينة</h2>
+<div id="prev"></div>
+<p class="s"
