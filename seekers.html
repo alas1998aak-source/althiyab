@@ -17,15 +17,17 @@ button{font-family:inherit;font-size:15px;border:0;border-radius:8px;padding:10p
 button.full{width:100%;margin-top:14px;font-size:17px}
 button.gray{background:#6b7280}
 button.red{background:#c0392b}
-button.blue{background:#1d6fd8}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .tabs{display:flex;gap:6px;margin:10px 0}
 .tabs button{flex:1;background:#e5e7eb;color:#222;padding:10px 4px;font-size:14px}
 .tabs button.on{background:#0a7d3b;color:#fff}
 .search{display:flex;gap:6px}
 .search input{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.chip{background:#e5e7eb;color:#222;padding:8px 12px;font-size:14px;border-radius:18px}
+.chip.on{background:#0a7d3b;color:#fff}
 .msg{margin-top:10px;font-size:15px}
-.err{color:#c0392b}.ok{color:#0a7d3b}.muted{color:#666;font-size:14px}
+.err{color:#c0392b}.muted{color:#666;font-size:14px}
 .person{display:flex;gap:12px}
 .photo{width:76px;height:76px;border-radius:10px;object-fit:cover;background:#e5e7eb;flex:none}
 .ph{width:76px;height:76px;border-radius:10px;background:#e5e7eb;flex:none;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px}
@@ -71,7 +73,8 @@ button.blue{background:#1d6fd8}
 <button id="sb" type="button">بحث</button>
 </div>
 
-<div id="count" class="muted" style="margin:10px 2px"></div>
+<div id="chips" class="chips"></div>
+<div id="count" class="muted" style="margin:8px 2px"></div>
 <div id="list"></div>
 </div>
 </div>
@@ -84,6 +87,11 @@ button.blue{background:#1d6fd8}
   var sb = window.sb;
   var $ = function (id) { return document.getElementById(id); };
   var tab = "pending";
+  var cat = "all";
+  var all = [];
+  var shown = 50;
+  var urls = {};
+  var token = 0;
   var timer = null;
 
   function E(s) {
@@ -91,6 +99,44 @@ button.blue{background:#1d6fd8}
     return s.replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
+  }
+
+  function N(s) {
+    return String(s || "").toLowerCase()
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+      .replace(/[أإآٱ]/g, "ا")
+      .replace(/ى/g, "ي")
+      .replace(/ة/g, "ه")
+      .replace(/ؤ/g, "و")
+      .replace(/ئ/g, "ي");
+  }
+
+  // التصنيفات: عدّل الكلمات هون إذا بدك تضيف أو تغيّر
+  var CATS = [
+    { k: "all", t: "الكل" },
+    { k: "acc", t: "محاسبين", w: ["محاسب", "مالي", "مراجع حسابات", "مدقق"] },
+    { k: "drv", t: "سائقين وتوصيل", w: ["سائق", "سواق", "شوفير", "توصيل", "دليفري", "ديليفري", "دلفري", "موتور"] },
+    { k: "tch", t: "أساتذة ومعلمين", w: ["استاذ", "مدرس", "معلم", "تدريس"] },
+    { k: "eng", t: "مهندسين", w: ["مهندس", "هندس"] },
+    { k: "med", t: "طبي وصحي", w: ["طبيب", "دكتور", "ممرض", "تمريض", "صيدل", "مخبر", "اسنان", "قابله", "طبي"] },
+    { k: "sal", t: "مبيعات وتسويق", w: ["مبيعات", "مبيع", "تسويق", "مندوب", "بائع", "كاشير"] },
+    { k: "adm", t: "إداريين وسكرتاريا", w: ["سكرتير", "ادار", "موظف", "استقبال", "ادخال بيانات"] },
+    { k: "crf", t: "حرفيين وفنيين", w: ["كهرب", "سباك", "نجار", "حداد", "بناء", "دهان", "ميكانيك", "حلاق", "طباخ", "شيف", "خياط", "عامل", "فني"] },
+    { k: "other", t: "أخرى" }
+  ];
+  CATS.forEach(function (c) { if (c.w) c.w = c.w.map(N); });
+
+  function catsOf(x) {
+    var f = N(x.field);
+    var out = [];
+    CATS.forEach(function (c) {
+      if (!c.w) return;
+      for (var i = 0; i < c.w.length; i++) {
+        if (f.indexOf(c.w[i]) > -1) { out.push(c.k); return; }
+      }
+    });
+    if (!out.length) out.push("other");
+    return out;
   }
 
   function digits(p) { return String(p || "").replace(/[^0-9]/g, ""); }
@@ -123,7 +169,7 @@ button.blue{background:#1d6fd8}
       return;
     }
     showApp();
-    load();
+    loadData();
   }
 
   async function init() {
@@ -158,62 +204,90 @@ button.blue{background:#1d6fd8}
   document.querySelectorAll(".tabs button").forEach(function (b) {
     b.addEventListener("click", function () {
       tab = b.getAttribute("data-tab");
+      cat = "all";
       document.querySelectorAll(".tabs button").forEach(function (x) {
         x.classList.toggle("on", x === b);
       });
-      load();
+      loadData();
     });
   });
 
-  $("sb").addEventListener("click", load);
+  $("sb").addEventListener("click", function () { shown = 50; render(); });
   $("q").addEventListener("input", function () {
     clearTimeout(timer);
-    timer = setTimeout(load, 450);
+    timer = setTimeout(function () { shown = 50; render(); }, 250);
   });
   $("q").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") { clearTimeout(timer); load(); }
+    if (e.key === "Enter") { clearTimeout(timer); shown = 50; render(); }
   });
 
-  async function load() {
-    var list = $("list");
-    list.innerHTML = '<p class="muted">جاري التحميل...</p>';
+  $("chips").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-cat]");
+    if (!b) return;
+    cat = b.getAttribute("data-cat");
+    shown = 50;
+    render();
+  });
+
+  async function loadData() {
+    $("list").innerHTML = '<p class="muted">جاري التحميل...</p>';
     $("count").textContent = "";
-
-    var q = sb.from("job_seekers").select("*").eq("status", tab)
-      .order("created_at", { ascending: false }).limit(200);
-
-    var term = $("q").value.replace(/[,()%*\\"]/g, " ").trim();
-    if (term) {
-      var p = "%" + term + "%";
-      q = q.or(
-        'full_name.ilike."' + p + '",field.ilike."' + p + '",skills.ilike."' + p + '",governorate.ilike."' + p + '"'
-      );
-    }
-
-    var r = await q;
+    var r = await sb.from("job_seekers").select("*").eq("status", tab)
+      .order("created_at", { ascending: false }).limit(1000);
     if (r.error) {
-      list.innerHTML = '<p class="err">خطأ: ' + E(r.error.message) + "</p>";
+      $("list").innerHTML = '<p class="err">خطأ: ' + E(r.error.message) + "</p>";
       return;
     }
+    all = (r.data || []).map(function (x) { x._c = catsOf(x); return x; });
+    shown = 50;
+    render();
+  }
 
-    var rows = r.data || [];
+  async function render() {
+    var my = ++token;
+    var term = N($("q").value.trim());
+
+    var base = all.filter(function (x) {
+      if (!term) return true;
+      return N([x.full_name, x.field, x.skills, x.governorate].join(" ")).indexOf(term) > -1;
+    });
+
+    var counts = {};
+    CATS.forEach(function (c) { counts[c.k] = 0; });
+    base.forEach(function (x) {
+      counts.all++;
+      x._c.forEach(function (k) { counts[k]++; });
+    });
+
+    $("chips").innerHTML = CATS.map(function (c) {
+      return '<button type="button" class="chip' + (cat === c.k ? " on" : "") +
+        '" data-cat="' + c.k + '">' + E(c.t) + " (" + counts[c.k] + ")</button>";
+    }).join("");
+
+    var rows = base.filter(function (x) {
+      return cat === "all" || x._c.indexOf(cat) > -1;
+    });
     $("count").textContent = "العدد: " + rows.length;
+
+    var list = $("list");
     if (!rows.length) {
       list.innerHTML = '<p class="muted">ما في نتائج.</p>';
       return;
     }
 
-    var paths = rows.filter(function (x) { return x.photo_path; })
+    var vis = rows.slice(0, shown);
+
+    var need = vis.filter(function (x) { return x.photo_path && !urls[x.photo_path]; })
       .map(function (x) { return x.photo_path; });
-    var urls = {};
-    if (paths.length) {
-      var s = await sb.storage.from("seeker-photos").createSignedUrls(paths, 3600);
+    if (need.length) {
+      var s = await sb.storage.from("seeker-photos").createSignedUrls(need, 3600);
       if (s.data) {
         s.data.forEach(function (o) { if (o.signedUrl) urls[o.path] = o.signedUrl; });
       }
     }
+    if (my !== token) return;
 
-    list.innerHTML = rows.map(function (x) {
+    var html = vis.map(function (x) {
       var img = urls[x.photo_path]
         ? '<img class="photo" src="' + E(urls[x.photo_path]) + '" alt="">'
         : '<div class="ph">بدون صورة</div>';
@@ -242,9 +316,16 @@ button.blue{background:#1d6fd8}
         btns +
         "</div></div>";
     }).join("");
+
+    if (rows.length > shown) {
+      html += '<button type="button" class="full gray" id="more">عرض المزيد (' + (rows.length - shown) + ")</button>";
+    }
+    list.innerHTML = html;
   }
 
   $("list").addEventListener("click", async function (e) {
+    if (e.target.id === "more") { shown += 50; render(); return; }
+
     var b = e.target.closest("button[data-act]");
     if (!b) return;
     var act = b.getAttribute("data-act");
@@ -257,7 +338,7 @@ button.blue{background:#1d6fd8}
       var d = await sb.from("job_seekers").delete().eq("id", id);
       if (d.error) { alert("فشل الحذف: " + d.error.message); b.disabled = false; return; }
       if (photo) { await sb.storage.from("seeker-photos").remove([photo]); }
-      load();
+      loadData();
       return;
     }
 
@@ -266,11 +347,11 @@ button.blue{background:#1d6fd8}
       .update({ status: act, reviewed_at: new Date().toISOString() })
       .eq("id", id);
     if (u.error) { alert("فشل التحديث: " + u.error.message); b.disabled = false; return; }
-    load();
+    loadData();
   });
 
   init();
 })();
 </script>
 </body>
-  </html>
+</html>
