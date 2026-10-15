@@ -184,7 +184,49 @@ footer b{color:var(--gold2)}
   }
 })();
 </script>
-<div style="max-width:640px;margin:20px auto;padding:0 16px;font-family:Tahoma,Arial,sans-serif;text-align:center">
+<script>
+(function () {
+  var btn = null;
+  var all = document.querySelectorAll("button, a");
+  for (var i = 0; i < all.length; i++) {
+    if (all[i].textContent.trim() === "القائمة") { btn = all[i]; break; }
+  }
+  var nav = document.querySelector("header nav") || document.querySelector("nav");
+  if (!btn || !nav) return;
+  var first = nav.querySelector("a");
+  var extra = [
+    ["أنشئ سيرتك الذاتية", "resume.html"],
+    ["تنزيل سيرتي", "download.html"],
+    ["أرسل إعلان وظيفة", "submit.html"],
+    ["كل الإعلانات", "jobs.html"]
+  ];
+  extra.forEach(function (x) {
+    var a = document.createElement("a");
+    a.href = x[1];
+    a.textContent = x[0];
+    if (first) a.className = first.className;
+    nav.appendChild(a);
+  });
+  if (window.innerWidth > 820) return;
+  var fresh = btn.cloneNode(true);
+  btn.parentNode.replaceChild(fresh, btn);
+  var open = false;
+  function setOpen(v) {
+    open = v;
+    nav.style.display = v ? "flex" : "none";
+    nav.style.flexDirection = "column";
+    nav.classList.toggle("open", v);
+  }
+  setOpen(false);
+  fresh.addEventListener("click", function (e) {
+    e.preventDefault();
+    setOpen(!open);
+  });
+  nav.addEventListener("click", function (e) {
+    if (e.target.tagName === "A") setOpen(false);
+  });
+})();
+</script><div style="max-width:640px;margin:20px auto;padding:0 16px;font-family:Tahoma,Arial,sans-serif;text-align:center">
 <a href="resume.html" style="display:block;margin:8px 0;padding:14px;background:#12305a;color:#fff;border-radius:10px;text-decoration:none;font-size:17px">أنشئ سيرتك الذاتية (2 دولار)</a>
 <a href="download.html" style="display:block;margin:8px 0;padding:14px;background:#c9a227;color:#000;border-radius:10px;text-decoration:none;font-size:17px">تنزيل سيرتي الذاتية</a>
 <a href="jobs.html" style="display:block;margin:8px 0;padding:14px;background:#0a7d3b;color:#fff;border-radius:10px;text-decoration:none;font-size:17px">فرص العمل</a>
