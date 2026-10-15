@@ -27,6 +27,15 @@ R.render = function (d) {
   if (d.skills.length) h += "<h4>المهارات</h4>" + ul(d.skills);
   if (d.langs.length) h += "<h4>اللغات</h4>" + ul(d.langs);
   if (d.courses.length) h += "<h4>الدورات والشهادات</h4>" + ul(d.courses);
+if (!document.getElementById("tplcss")) {
+  var st = document.createElement("style"); st.id = "tplcss";
+  st.textContent = ".tpl-2 h3{background:#12305a!important;color:#fff!important;padding:12px!important;border-radius:8px!important}";
+  st.textContent += ".tpl-2 h4{color:#12305a!important;border-bottom:2px solid #12305a!important;padding-bottom:4px!important}";
+  st.textContent += ".tpl-3{font-family:Georgia,serif!important}.tpl-3 h3{text-align:center!important;font-size:26px!important}";
+  st.textContent += ".tpl-3 h4{border-bottom:1px solid #000!important;color:#000!important}";
+  document.head.appendChild(st);
+}
+h = '<div class="tpl-' + safe(d.tpl || "1") + '">' + h + "</div>";
   return h;
 };
 R.addExp = function () {
