@@ -78,6 +78,7 @@ async function load() {
     if (j.status !== "approved") btns += '<button data-a="approved" data-id="' + j.id + '">قبول</button>';
     if (j.status === "pending") btns += '<button class="o" data-a="rejected" data-id="' + j.id + '">رفض</button>';
     if (j.status === "approved") btns += '<button class="g" data-a="hidden" data-id="' + j.id + '">إخفاء</button>';
+  if (j.status === "approved") btns += '<button class="o" data-a="feature" data-id="' + j.id + '">' + (j.featured_until && new Date(j.featured_until) > new Date() ? "إلغاء التمييز" : "تمييز") + "</button>";
     btns += '<button class="r" data-a="delete" data-id="' + j.id + '" data-p="' + esc(j.image_path || "") + '">حذف</button>';
     return '<div class="card"><b>' + esc(j.title) + "</b> - " + esc(j.company) +
       '<div class="s">' + esc(j.governorate) + (j.area ? " / " + esc(j.area) : "") + (j.salary ? " | " + esc(j.salary) : "") + "</div>" +
