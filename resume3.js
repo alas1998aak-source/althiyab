@@ -13,7 +13,17 @@ function newId() {
 $("priceTxt").textContent = PRICE;
 $("priceTxt2").textContent = PRICE;
 $("shamCode").textContent = SHAM_CODE;
-R.addExp(); R.addEdu();
+sb.from("settings").select("key,value").then(function (r) {
+  if (r.error || !r.data) return;
+  r.data.forEach(function (x) {
+    if (x.key === "resume_price" && Number(x.value) > 0) PRICE = x.value;
+    if (x.key === "sham_code" && x.value) SHAM_CODE = x.value;
+  });
+  $("priceTxt").textContent = PRICE;
+  $("priceTxt2").textContent = PRICE;
+  $("shamCode").textContent = SHAM_CODE;
+});
+  R.addExp(); R.addEdu();
 $("addExp").onclick = R.addExp;
 $("addEdu").onclick = R.addEdu;
 $("btnNoPhoto").onclick = R.clearPhoto;
