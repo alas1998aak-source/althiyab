@@ -31,6 +31,8 @@ $("btnSave").onclick = async function () {
   if (c.length < 4) { say("اكتب كود شام كاش", false); return; }
   var b = this; b.disabled = true; say("جاري الحفظ...", true);
   var r = await sb.from("settings").upsert([
+ { key: "featured_price", value: $("fprice").value.trim().replace(",", ".") || "5", updated_at: new Date().toISOString() },
+{ key: "featured_days", value: $("fdays").value.trim() || "7", updated_at: new Date().toISOString() },
     { key: "resume_price", value: p, updated_at: new Date().toISOString() },
     { key: "sham_code", value: c, updated_at: new Date().toISOString() }
   ]);
