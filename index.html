@@ -109,7 +109,17 @@ footer b{color:var(--gold2)}
   </div>
  </div>
 </div>
-
+<div id="quick" style="max-width:640px;margin:20px auto;padding:0 16px;font-family:Tahoma,Arial,sans-serif;text-align:center">
+<a href="resume.html" style="display:block;margin:8px 0;padding:14px;background:#12305a;color:#fff;border-radius:10px;text-decoration:none;font-size:17px">أنشئ سيرتك الذاتية (2 دولار)</a>
+<a href="download.html" style="display:block;margin:8px 0;padding:14px;background:#c9a227;color:#000;border-radius:10px;text-decoration:none;font-size:17px">تنزيل سيرتي الذاتية</a>
+<a href="jobs.html" style="display:block;margin:8px 0;padding:14px;background:#0a7d3b;color:#fff;border-radius:10px;text-decoration:none;font-size:17px">فرص العمل</a>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var last = document.body.lastElementChild;
+  if (last && last.id !== "quick" && last.querySelector('a[href="download.html"]')) last.remove();
+});
+</script>
 <section id="services" class="alt"><div class="wrap">
  <h2>خدماتنا</h2>
  <p class="lead">خدمات إعلانية وتوظيفية في مكان واحد.</p>
