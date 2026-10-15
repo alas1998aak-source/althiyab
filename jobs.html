@@ -66,7 +66,10 @@ function refresh() {
   old.outerHTML = '<div id="list" class="card">جاري التحميل...</div>';
   load();
 }
-document.getElementById("gov").onchange = refresh;
+document.getElementById("gov").or.data.forEach(function (j) {
+  if (j.featured_until && new Date(j.featured_until) > new Date()) j.title = "⭐ مميز | " + j.title;
+});
+  nchange = refresh;
 document.getElementById("q").onchange = refresh;
 load();
 </script>
