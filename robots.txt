@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /payments.html
+Disallow: /seekers.html
+Disallow: /control.html
+
+Sitemap: https://alas1998aak-source.github.io/althiyab/sitemap.xml
