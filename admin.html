@@ -92,6 +92,15 @@ $("list").onclick = async function (e) {
   if (!b) return;
   var a = b.getAttribute("data-a"), id = b.getAttribute("data-id"), res;
   b.disabled = true;
+ if (a === "feature") {
+  var off = b.textContent === "إلغاء التمييز";
+  var fs = await sb.from("settings").select("value").eq("key", "featured_days");
+  var days = Number(fs.data && fs.data[0] && fs.data[0].value) || 7;
+  var until = off ? null : new Date(Date.now() + days * 86400000).toISOString();
+  res = await sb.from("jobs").update({ featured_until: until }).eq("id", id);
+  if (res.error) { say("خطأ: " + res.error.message); b.disabled = false; return; }
+  say(""); load(); return;
+ }
   if (a === "delete") {
     if (!confirm("حذف نهائي؟")) { b.disabled = false; return; }
     var p = b.getAttribute("data-p");
