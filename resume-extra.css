@@ -1,0 +1,11 @@
+.hide{display:none!important}
+#jserr{background:#b00020;color:#fff;padding:8px;border-radius:8px;margin-bottom:10px;direction:ltr;text-align:left;font-size:13px}
+#prev{position:relative;background:#fff;border:1px solid #ddd;padding:18px;border-radius:8px;overflow:hidden}
+#prev:before{content:"معاينة";position:absolute;top:40%;right:0;left:0;text-align:center;font-size:70px;color:rgba(0,0,0,.07);transform:rotate(-20deg);pointer-events:none}
+#prev h3{margin:0;font-size:22px;color:#12305a}
+#prev h4{margin:14px 0 4px;color:#12305a;border-bottom:2px solid #c9a227;padding-bottom:3px;font-size:15px}
+#prev p,#prev li{font-size:14px;margin:3px 0}
+.pic{float:left;width:90px;height:90px;object-fit:cover;border-radius:8px;margin:0 12px 8px 0}
+#thumb{width:90px;height:90px;object-fit:cover;border-radius:8px;margin-top:8px}
+.code{background:#f1f1f1;padding:10px;border-radius:8px;font-family:monospace;word-break:break-all;direction:ltr;text-align:left}
+/* endcss */
