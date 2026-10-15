@@ -9,70 +9,39 @@
 body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
 .box{max-width:640px;margin:0 auto}
 .card{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px}
-h1{font-size:22px}
-h2{font-size:17px;margin:0 0 10px}
-label{display:block;font-size:14px;margin:8px 0 4px}
-input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;font-family:inherit;direction:ltr;text-align:left}
-button,a.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:#0a7d3b;color:#fff;border:0;border-radius:8px;text-decoration:none;font-size:15px;font-family:inherit;cursor:pointer}
+input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;direction:ltr;text-align:left}
+button,a.b{display:inline-block;margin:6px 0 0 6px;padding:10px 14px;background:#0a7d3b;color:#fff;border:0;border-radius:8px;text-decoration:none;font-size:15px;font-family:inherit}
 .g{background:#666}
 .s{font-size:13px;color:#555}
 .err{color:#b00020;font-size:14px;margin-top:8px}
-#jserr{background:#b00020;color:#fff;padding:8px;border-radius:8px;margin-bottom:10px;direction:ltr;text-align:left;font-size:13px}
+.hide{display:none!important}
 #cv{background:#fff;border:1px solid #ddd;padding:18px;border-radius:8px}
 #cv h3{margin:0;font-size:22px;color:#12305a}
 #cv h4{margin:14px 0 4px;color:#12305a;border-bottom:2px solid #c9a227;padding-bottom:3px;font-size:15px}
 #cv p,#cv li{font-size:14px;margin:3px 0}
 .pic{float:left;width:90px;height:90px;object-fit:cover;border-radius:8px;margin:0 12px 8px 0}
-.hide{display:none}
-@media print{
-  body{background:#fff;padding:0}
-  .noprint{display:none!important}
-  #cvWrap{display:block!important;margin:0;padding:0;box-shadow:none}
-  #cv{border:0;padding:0}
-}
+@media print{body{background:#fff;padding:0}.noprint{display:none!important}#cvWrap{display:block!important;padding:0}#cv{border:0;padding:0}}
 </style>
 </head>
 <body>
 <div class="box">
-<div id="jserr" class="hide noprint"></div>
 <h1 class="noprint">تنزيل السيرة الذاتية</h1>
-
-<div id="askArea" class="card noprint">
+<div class="card noprint">
 <label>اكتب رمز الطلب اللي أخدته بعد الدفع</label>
 <input id="code" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
 <button type="button" id="btnGo">عرض سيرتي الذاتية</button>
 <div class="err" id="err"></div>
 </div>
-
-<div id="cvWrap" class="card hide">
-<div id="cv"></div>
-</div>
+<div id="cvWrap" class="card hide"><div id="cv"></div></div>
 <div id="actions" class="hide noprint">
 <button type="button" id="btnPdf">تنزيل PDF</button>
 <p class="s">بعد الضغط، اختار "حفظ كملف PDF" (Save as PDF) من نافذة الطباعة.</p>
 </div>
-
 <a class="b g noprint" href="index.html">الرئيسية</a>
 </div>
-<script>
-window.onerror = function (m, u, l) {
-  var e = document.getElementById("jserr");
-  if (e) { e.textContent = "Error: " + m + " (line " + l + ")"; e.className = "noprint"; }
-};
-</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
-<script>
-(function () {
-var $ = function (id) { return document.getElementById(id); };
-function safe(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
-function ul(a) { return a && a.length ? "<ul>" + a.map(function (x) { return "<li>" + safe(x) + "</li>"; }).join("") + "</ul>" : ""; }
-function render(d) {
-  var h = "";
-  if (d.photo && String(d.photo).indexOf("data:image/jpeg;base64,") === 0) h += '<img class="pic" src="' + safe(d.photo) + '" alt="">';
-  h += "<h3>" + safe(d.name) + "</h3>";
-  if (d.title) h += "<p><b>" + safe(d.title) + "</b></p>";
-  h += "<p>" + safe(d.phone) + (d.email ? " | " + safe(d.email) : "") + (d.city ? " | " + safe(d.city) : "") + "</p>";
-  if (d.summary) h += "<h4>نبذة مهنية</h4><p>" + safe(d.summary) + "</p>";
-  if (d.exps && d.exps.length) h += "<h4>الخبرات العملية</h4>" + d.exps.map(function (e)
+<script src="download.js"></script>
+</body>
+</html>
