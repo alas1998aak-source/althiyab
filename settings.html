@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>إعدادات الموقع - الإدارة</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;margin:0;padding:16px;color:#222}
+.box{max-width:640px;margin:0 auto}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px}
+h1{font-size:21px}
+label{display:block;font-size:14px;margin:10px 0 4px}
+input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;font-family:inherit}
+button,a.b{display:inline-block;margin:10px 6px 0 0;padding:10px 14px;background:#0a7d3b;color:#fff;border:0;border-radius:8px;text-decoration:none;font-size:15px;font-family:inherit;cursor:pointer}
+.g{background:#666}
+.err{color:#b00020;font-size:14px;margin-top:8px}
+.ok{color:#0a7d3b;font-size:14px;margin-top:8px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>إعدادات الموقع</h1>
+<div id="loginArea" class="card hide">
+<label>البريد الإلكتروني</label><input id="em" type="email">
+<label>كلمة المرور</label><input id="pw" type="password">
+<button type="button" id="btnLogin">دخول</button>
+<div class="err" id="errL"></div>
+</div>
+<div id="mainArea" class="card hide">
+<label>سعر السيرة الذاتية (بالدولار)</label>
+<input id="price" inputmode="decimal">
+<label>كود حساب شام كاش</label>
+<input id="sham" dir="ltr">
+<button type="button" id="btnSave">حفظ</button>
+<button type="button" class="g"
