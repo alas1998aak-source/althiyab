@@ -42,6 +42,7 @@ async function load() {
   if (r.error || !r.data) { J.textContent = "الإعلان غير موجود أو منتهي"; return; }
   var j = r.data;
   document.title = j.title + " - مكتب الذياب";
+var md=document.querySelector('meta[name="description"]');if(!md){md=document.createElement("meta");md.name="description";document.head.appendChild(md);}md.content=j.title+" - "+j.company+" - "+j.governorate+". تفاصيل الوظيفة والتواصل مع مكتب الذياب.";
   var img = j.image_path ? '<img src="' + esc(sb.storage.from("job-images").getPublicUrl(j.image_path).data.publicUrl) + '">' : "";
   var tel = String(j.phone).replace(/[^0-9+]/g, "");
   var url = location.href;
