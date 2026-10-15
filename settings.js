@@ -8,6 +8,8 @@ async function load() {
   r.data.forEach(function (x) {
     if (x.key === "resume_price") $("price").value = x.value;
     if (x.key === "sham_code") $("sham").value = x.value;
+    if (x.key === "featured_price") $("fprice").value = x.value;
+    if (x.key === "featured_days") $("fdays").value = x.value;
   });
 }
 async function start() {
