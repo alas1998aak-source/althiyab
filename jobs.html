@@ -37,7 +37,7 @@ async function load() {
   var g = document.getElementById("gov").value;
   var t = document.getElementById("q").value.trim().replace(/[,()%*]/g, " ").trim();
   var q = sb.from("jobs")
-    
+    .select("id,company,title,details,governorate,area,salary,phone,email,apply_method,image_path,published_at,featured_until")    
     .eq("status", "approved")
     .order("published_at", { ascending: false });
   if (g) q = q.eq("governorate", g);
