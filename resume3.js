@@ -1,7 +1,10 @@
 (function () {
 var R = window.R;
 var $ = R.$, show = R.show;
-var SHAM_CODE = "c59083cd3afc0ae6251247f649f20fd2";
+var oc = R.collect;
+R.collect = function () { var d = oc(); d.tpl = $("tpl").value; return d; };
+$("tpl").onchange = function () { $("prev").innerHTML = R.render(R.collect()); };
+  var SHAM_CODE = "c59083cd3afc0ae6251247f649f20fd2";
 var PRICE = 2;
 function newId() {
   if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
