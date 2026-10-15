@@ -45,6 +45,11 @@ async function load() {
   var r = await q;
   if (r.error) { L.textContent = "تعذر تحميل الإعلانات"; return; }
   if (!r.data.length) { L.textContent     .select("id,company,title,details,governorate,area,salary,phone,email,apply_method,image_path,published_at,featured_until")= "لا يوجد إعلانات مطابقة"; return; }
+r.data.sort(function (x, y) {
+  var fx = x.featured_until && new Date(x.featured_until) > new Date() ? 1 : 0;
+  var fy = y.featured_until && new Date(y.featured_until) > new Date() ? 1 : 0;
+  return fy - fx;
+});
   L.outerHTML = '<div id="list">' + r.data.map(function (j) {
     var img = j.image_path ? '<img src="' + esc(sb.storage.from("job-images").getPublicUrl(j.image_path).data.publicUrl) + '">' : "";
     var tel = String(j.phone).replace(/[^0-9+]/g, "");
